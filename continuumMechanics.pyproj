@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>749136f4-0c83-40d9-83bf-974d52df03b6</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>assignment2.py</StartupFile>
+    <StartupFile>assignment3.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -22,6 +22,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="assignment2.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="assignment3.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="continuumMechanics.py" />

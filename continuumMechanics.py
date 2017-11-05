@@ -2,6 +2,8 @@ import numpy as np
 from numpy import einsum as es
 from numpy import tensordot as td
 
+import scipy.linalg as spla
+
 #the helper functions needed for the assignment
 DIMS = 3 #cause 3D stuff, probably will break if you change this
 
@@ -140,6 +142,37 @@ def normal_logan_hosforf(s1, s2, a, R0, R90):
 
     return (N1, N2, N3)
 
+
+def green_largrange_stretch_strain(F):
+    '''green-lagrange stretch and strain C, E'''
+    C = F.transpose()@F
+    E = 0.5*(C - np.identity(DIMS))
+
+    return (C, E)
+
+
+def velocity_gradient(F, Fdot):
+    '''velocity gradient and deformation tensor and vortiticy L D W'''
+    L = Fdot @ np.linalg.inv(F)
+    D = 0.5*(L+L.transpose())
+    W = 0.5*(L-L.transpose())
+
+    return (L, D, W)
+
+
+def polar_decomposition(F):
+    '''decompose F into rotation and stretch of both kinds R, V, U'''
+    (R, U) = spla.polar(F)
+    (_, V) = spla.polar(F, 'left')
+
+    return (R, V, U)
+
+def objective_update(A, Spin, Adotobj):
+    '''objective update of A with a certain spin, and objective rate of A'''
+    Adot = Adot - A @ Spin + Spin @ A
+    Anext = A + Adot
+
+    return Anext
 
 UNIAXIAL_TENSION = 'uniaxial tension'
 
