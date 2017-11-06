@@ -167,12 +167,46 @@ def polar_decomposition(F):
 
     return (R, V, U)
 
-def objective_update(A, Spin, Adotobj):
+def rotation_stretch_right(F):
+    '''polar decomposition of F returns the rotation and right stretch tensor U'''
+    (R, U) = spla.polar(F, 'right')
+    return (R, U)
+
+def rotation_stretch_left(F):
+    '''polar decomposition of F returns the rotation and left stretch tensor V'''
+    (R, V) = spla.polar(F, 'left')
+    return (R, V)
+
+def objective_update(A, Spin, Adotobj, dt):
     '''objective update of A with a certain spin, and objective rate of A'''
-    Adot = Adot - A @ Spin + Spin @ A
-    Anext = A + Adot
+    Adot = Adotobj - A @ Spin + Spin @ A
+    Anext = A + Adot *dt
 
     return Anext
+
+def deformation_gradient_simple_shear(gamma):
+    '''return a deformation gradient for simple shear'''
+    F = np.identity(DIMS)
+    F[0,1] = gamma
+
+    return F
+
+def deformation_gradient_dot_simple_shear(dgamma):
+    '''return a deformation gradient derivative for simple shear'''
+    Fdot = np.zeros((DIMS, DIMS))
+    Fdot[0,1] = dgamma
+
+    return Fdot
+
+def log_spin(dgamma, gamma):
+    '''logarithim spin'''
+    A = dgamma/4
+    B = 4/(4+gamma**2)
+    C = gamma/(np.sqrt(4+gamma**2) * np.arcsinh(gamma/2))
+
+    spin = A*(B+C)*np.fliplr(np.diag([1,-1],k=1))
+
+    return spin
 
 UNIAXIAL_TENSION = 'uniaxial tension'
 
