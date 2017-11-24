@@ -58,7 +58,7 @@ def stress_hyd(sigma):
     return td(eye4vol, sigma)
 
 
-def elestic_stress(E, v):
+def elastic_moduli(E, v):
     '''4th order elastic tensor'''
     #shear modulus
     G = E/(2*(1+v));
@@ -69,7 +69,7 @@ def elestic_stress(E, v):
 
     return l*eye4 + 2*G*eye4s;
 
-def elestic_compliance(E, v):
+def elastic_compliance(E, v):
     '''4th order elastic compliance tensor'''
     #shear modulus
     G = E/(2*(1+v));
@@ -207,6 +207,132 @@ def log_spin(dgamma, gamma):
     spin = A*(B+C)*np.fliplr(np.diag([1,-1],k=1))
 
     return spin
+
+#shear_integration(gamma=12, dt=1/500,
+def shear_integration(gamma, dt, obj_rate='log', E=205*10**9, poisson=0.25):
+    '''integrate simple shear'''
+    dgamma = gamma *dt #assume it happens in 1 second
+    gammas = np.linspace(dgamma, gamma, 1/dt)
+
+    #the list of strains at the end of integration
+    strains = []
+    stresses = []
+    angles = []
+
+    #4th order elastic moduli
+    L_el = elastic_moduli(E, poisson)
+
+    #initial strain, stress is zero
+    strain = np.zeros((DIMS, DIMS))
+    stress = np.zeros((DIMS, DIMS))
+
+    for cur_gamma in gammas:
+        #get the deformation gradient
+        F = deformation_gradient_simple_shear(cur_gamma)
+        Fdot = deformation_gradient_dot_simple_shear(dgamma/dt)
+
+        (L, D, W) = velocity_gradient(F, Fdot)
+
+        #spin rate
+        if obj_rate is 'log':
+            spin = log_spin(dgamma/dt, cur_gamma)
+        elif obj_rate is 'jaumann':
+            spin = W
+        else:
+            raise Exception('what spin?')
+
+        #update strain
+        strain_dot_obj = D
+        strain = objective_update(strain, spin, strain_dot_obj, dt)
+
+        #add the strains to the list
+        e11 = strain[0,0]
+        e12 = strain[0,1]
+        e22 = strain[1,1]
+        e1 = max(np.linalg.eigvals(strain))
+        strains.append([e11, e12, e1])
+
+        #update stress
+        sigma_dot_obj = td(L_el, D)
+        stress = objective_update(stress, spin, sigma_dot_obj, dt)
+
+        #add the stress to the list
+        s11 = stress[0,0]
+        s12 = stress[0,1]
+        s22 = stress[1,1]
+        s1 = max(np.linalg.eigvals(stress))
+        stresses.append([s11, s12, s1])
+
+
+
+        theta = np.arctan(2*s12/(s11-s22)) * 0.5;
+        angles.append(theta)
+
+
+    #conver to numpy array
+    return gammas, np.array(strains), np.array(stresses), np.array(angles)
+
+
+def shear_integration_hyper(gamma, dt, E=205*10**9, poisson=0.25):
+    '''hyper elastic simple shear integration'''
+    dgamma = gamma *dt #assume it happens in 1 second
+    gammas = np.linspace(dgamma, gamma, 1/dt)
+
+    #constants
+    K = E/(3*(1-2*poisson))
+    G = E/(2*(1+poisson))
+
+    #the list of strains at the end of integration
+    strains = []
+    stresses = []
+    angles = []
+
+    #initial strain, stress is zero
+    strain = np.zeros((DIMS, DIMS))
+    stress = np.zeros((DIMS, DIMS))
+
+    for cur_gamma in gammas:
+        #get the deformation gradient
+        F = deformation_gradient_simple_shear(cur_gamma)
+        Fdot = deformation_gradient_dot_simple_shear(dgamma/dt)
+
+        (L, D, W) = velocity_gradient(F, Fdot)
+
+        strain = 0.5 * (F.transpose()@F - kdel)
+
+        stress = (K-2*G/3) * np.trace(strain) * kdel + 2*G*strain
+
+        #add the strains to the list
+        e11 = strain[0,0]
+        e12 = strain[0,1]
+        e22 = strain[1,1]
+        e1 = max(np.linalg.eigvals(strain))
+        strains.append([e11, e12, e1])
+
+        #add the stress to the list
+        s11 = stress[0,0]
+        s12 = stress[0,1]
+        s22 = stress[1,1]
+        s1 = max(np.linalg.eigvals(stress))
+        stresses.append([s11, s12, s1])
+
+    return gammas, np.array(strains), np.array(stresses)
+
+def shear_analytical(gamma, E=205*10**9, poisson=0.25):
+    L_el = elastic_moduli(E, poisson)
+    a = np.array([  [gamma, 2,  0],
+                    [2, -gamma, 0],
+                    [0,    0,   0]])
+    strain = np.arcsinh(gamma/2)/np.sqrt(4+gamma**2) * a
+    stress = td(L_el, strain)
+
+    s11 = stress[0,0]
+    s12 = stress[0,1]
+    s22 = stress[1,1]
+    s1 = max(np.linalg.eigvals(stress))
+    return np.array((s11, s12, s1))
+
+
 
 UNIAXIAL_TENSION = 'uniaxial tension'
 

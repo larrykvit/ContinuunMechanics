@@ -68,7 +68,7 @@ for cur_gamma in gammas:
 plotStrains = np.array(plotStrains)
 
 fig_log = plot.figure()
-ax = fig_log.add_subplot(1,1,1)
+ax = fig.add_subplot(1,1,1)
 ax.plot(gammas, plotStrains)
 ax.plot(gammas, np.arcsinh(gammas/2), 'r--')
 ax.legend([r'$\epsilon_{11}$', r'$\epsilon_{22}$', r'$\epsilon_{1}$', r'Closed-form $\epsilon_{1}$'])
@@ -77,7 +77,7 @@ ax.set_title('Logarithmic Spin')
 ax.set_xlabel(r'$\gamma$')
 ax.set_ylabel(r'$\epsilon$')
 
-plot.show(fig_log)
+plot.show(fig)
 print('logarithmic strain')
 print(strain)
 print('principle direction')
